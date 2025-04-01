@@ -652,7 +652,7 @@ const FormComponent = () => {
                     <img src={product?.updateBannerUrl ?? ""} alt="" style={{ width: "100%" }} />
                   </a> */}
                 </Modal>
-                <div style={{ backgroundColor: "rgb(24, 29, 59)", padding: "8px 16px" }}>
+                <div style={{ backgroundColor: theme.token.colorPrimary, padding: "8px 16px" }}>
                   <Row justify="center" align="middle">
                     {TAB_ITEMS.map((x, i) => (
                       <Col span={6} key={"tab-" + i} style={{ textAlign: "center" }}>
