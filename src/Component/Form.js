@@ -1,81 +1,99 @@
 /* eslint-disable */
-import React, { useEffect, useState } from "react";
+import { useEffect, useState,useContext } from "react";
 import "./Form.css";
 import {
-  Button,
-  Card,
-  Col,
-  Row,
+  Space,
   Typography,
   Input,
+  Form,
   Checkbox,
   Select,
-  Form,
-  Spin,
+  Alert,
   Divider,
-  List,
   Modal,
-  Tag,
-  Space,
-  Tabs,
-  Grid,
-  ConfigProvider,
-  Steps,
-  notification,
-  Avatar,
+  Button,
+  Row,
+  Image,
+  Col,
   Flex,
+  Spin,
+  notification,
+  ConfigProvider,
+  Card,
+  Tooltip,
+  Avatar,
+  Segmented,
+  Carousel,
+  Popover,
 } from "antd";
-import { PhoneOutlined, GlobalOutlined, MailOutlined, LeftOutlined, RightOutlined, PlayCircleOutlined } from "@ant-design/icons";
-import { Carousel } from "antd";
+
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
-import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import countryList from "../countryList.json";
-import langList from "../lang.json";
 import logo from "../images/logo.png";
+import icon from "../images/Info.svg";
+import {
+  CheckCircleOutlined,
+  ClearOutlined,
+  CloseOutlined,
+  DeleteOutlined,
+  DownloadOutlined,
+  EnvironmentOutlined,
+  GlobalOutlined,
+  HomeOutlined,
+  KeyOutlined,
+  LinkOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  SendOutlined,
+  PlayCircleOutlined,
+  SaveOutlined,
+  SettingOutlined,
+  ShopOutlined,
+  StarOutlined,
+  UserOutlined,
+  ShoppingOutlined,
+  MoonOutlined,
+  SunOutlined
+} from "@ant-design/icons";
+import Paragraph from "antd/es/typography/Paragraph";
 import i18next from "i18next";
 import { useTranslation } from "react-i18next";
-import { VscAccount } from "react-icons/vsc";
-import { IoLocationOutline, IoHomeOutline } from "react-icons/io5";
-import { MdKey } from "react-icons/md";
-import { SnackbarProvider, useSnackbar } from "notistack";
-const { Title, Paragraph, Text } = Typography;
-const { Option } = Select;
-const { TabPane } = Tabs;
-const { Step } = Steps;
-import { useTheme } from "@emotion/react";
-// import { truncate } from "fs";
+import langList from "../lang.json"
+import { useThemeContext } from "../ThemeContext";
+const { Text, Title } = Typography;
 
-const ITEM_HEIGHT = 36;
-const MOBILE_ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MENU_ITEMS = 6;
-const TAB_ITEMS = ["home", "data", "setting", "help"];
-
-const font = "'Poppins', sans-serif";
-
+const TAB_ITEMS = ["home", "data", "help"];
+// import lang from "../util/lang/lang.json";
 const FormComponent = () => {
   const [form] = Form.useForm();
-  const { t, i18n } = useTranslation();
   const [api, contextHolder] = notification.useNotification();
-
   const [rData, setRData] = useState({});
-  const [theme, setTheme] = useState({
-    token: {
-      colorPrimary: "#0855a4",
-      fontFamily: font,
-    },
-  });
-  const themeslider = useTheme();
-  // const { enqueueSnackbar } = useSnackbar();
   const [isLoading, setIsLoading] = useState(true);
   const [product, setProduct] = useState(null);
   const [setting, setSetting] = useState(null);
   const [licenseDetails, setLicenseDetails] = useState(null);
+
   const [isLicenseValid, setIsLicenseValid] = useState(false);
   const [licenseMessage, setLicenseMessage] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSecond, setShowSecond] = useState(false);
   const [scrapData, setScrapData] = useState({});
+  const { t, i18n } = useTranslation();
+  const getScrapeData = () => {
+    sendChromeMessage({ type: "get_scrap" }, (response) => {
+      if (response.status == true) {
+        const data = response.data;
+        setScrapData(data);
+      } else {
+        setScrapData({});
+      }
+    });
+  };
+
   const [selectedKeywordId, setSelectedKeywordId] = useState("select");
+  const [activeStep, setActiveStep] = useState(0);
+  //activation form
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("+91");
@@ -83,23 +101,44 @@ const FormComponent = () => {
   const [city, setCity] = useState("");
   const [key, setKey] = useState("");
   const [keyIsValid, setKeyIsValid] = useState(false);
-  const [selectedTabId, setSelectedTabId] = useState("home");
+
+  const [selectedTabId, setSelectedTabId] = useState(0);
+  const [network, setNetwork] = useState('facebook');
+  const [countryCode, setCountryCode] = useState('India');
   const [delay, setDelay] = useState(1);
-  const [selectLang, setSelectLang] = useState("en");
+  const [selectLang, setSelectLang] = useState('en')
   const [dataFormate, setDataFormate] = useState("csv");
-  const [network, setNetwork] = useState("facebook");
-  const [countryCode, setCountryCode] = useState("India");
-  const [columns, setColumns] = useState([]);
-  const [extractCol, setExtractCol] = useState({});
-  const [keyword, setKeyword] = useState("");
-  const [location, setLocation] = useState("");
-  const [showValidation, setShowValidation] = useState(false);
-  const [licenceKeyErrorMessage, setLicenceKeyErrorMessage] = useState(t("invalidLicenseKey"));
+  const [removeDuplicate, setRemoveDuplicate] = useState("only_phone");
   const [renewKey, setRenewKey] = useState("");
+  const { theme, toggleTheme } = useThemeContext(null);
+  const columns = [
+    {
+      value: "title",
+      label: "Title",
+    },
+    {
+      value: "phone",
+      label: "Phone Number",
+    },
+    {
+      value: "email",
+      label: "Email",
+    },
+    {
+      value: "url",
+      label: "Website Url",
+    },
+  ];
+
+  //var dummy={};
+
+  const [extractCol, setExtractCol] = useState({});
+
+  const [keyword, setKeyword] = useState("");
+  const [location, setLocation] = useState('')
+  const [showValidation, setShowValidation] = useState(false);
   const [renewOpen, setRenewOpen] = useState(false);
-  const [localmanifestVersion, setLocalmanifestVersion] = useState("");
-  const [activeStep, setActiveStep] = useState(0);
-  const [isUpdate, setIsUpdate] = useState(false);
+
   const renewOpenForm = () => {
     setRenewKey("");
     setRenewOpen(true);
@@ -108,23 +147,35 @@ const FormComponent = () => {
     setRenewOpen(false);
   };
 
+  // const [theme, setTheme] = useState({
+  //   token: {
+  //     colorPrimary: "#0855a4",
+  //   },
+  // });
+
+  useEffect(() => {
+    let color = "#0855a4";
+
+    if (product?.color) {
+      color = product.color;
+    }
+
+    if (rData?.themeSetting?.primaryColor) {
+      color = rData.themeSetting.primaryColor;
+    }
+
+    // setTheme({
+    //   token: {
+    //     colorPrimary: color,
+    //   },
+    // });
+  }, [product, rData]);
+
   //check email regex
 
-  const isEmailIsValid = (emailAddress) => {
-    // var reEmail =
-    //   /^(?:[\w\!\#\$\%\&\'\*\+\-\/\=\?\^\`\{\|\}\~]+\.)*[\w\!\#\$\%\&\'\*\+\-\/\=\?\^\`\{\|\}\~]+@(?:(?:(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-](?!\.)){0,61}[a-zA-Z0-9]?\.)+[a-zA-Z0-9](?:[a-zA-Z0-9\-](?!$)){0,61}[a-zA-Z0-9]?)|(?:\[(?:(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\.){3}(?:[01]?\d{1,2}|2[0-4]\d|25[0-5])\]))$/;
-    // if (!reEmail.match(email)) {
-    //   return false;
-    // } else {
-    //   return true;
-    // }
-
-    //let regex = new RegExp('[a-z0-9]+@[a-z]+\.[a-z]{2,3}');
-    let regex = new RegExp("[a-z0-9]+@[a-z]+.[a-z]{2,3}");
-    return regex.test(emailAddress);
-
-    //const regexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    //return regexPattern.test(email);
+  const isEmailIsValid = (email) => {
+    const regexPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regexPattern.test(email);
   };
 
   const sendChromeMessage = (data, callback) => {
@@ -143,8 +194,7 @@ const FormComponent = () => {
 
   const getProductData = () => {
     sendChromeMessage({ type: "get_product" }, (response) => {
-      console.log("getProduct", response)
-
+      console.log("product:", response);
       if (response.status) {
         //setIsLoading(false);
         setProduct(response.product);
@@ -152,27 +202,9 @@ const FormComponent = () => {
     });
   };
 
-  const getColumns = () => {
-    sendChromeMessage({ type: "columns" }, (response) => {
-      if (!response || !response.columns) {
-        console.error("Error: response or response.columns is undefined", response);
-        return;
-      }
-
-      setColumns(response.columns);
-
-      response.columns.forEach((x) => {
-        setExtractCol((col) => {
-          return { ...col, [x.value]: true };
-        });
-      });
-    });
-  };
-
-
   const getResellerData = () => {
     sendChromeMessage({ type: "get_data" }, (response) => {
-      console.log("_data", response)
+      console.log("rData:", JSON.stringify(response));
       if (response.status == true) {
         setRData(response.data);
         setPhone("+" + response.data.country_code);
@@ -182,7 +214,6 @@ const FormComponent = () => {
         );
         if (c) {
           setCountry(c.countryNameEn);
-          setCountryCode(c.countryNameEn);
         } else {
           console.log("Country name not found");
         }
@@ -190,70 +221,46 @@ const FormComponent = () => {
     });
   };
 
-  const getScrapeData = () => {
-    sendChromeMessage({ type: "get_scrap" }, (response) => {
-
-      if (response.status == true) {
-        const data = response.data;
-        setScrapData(data);
-      } else {
-        setScrapData({});
-      }
-    });
-  };
-
   const getSetting = () => {
     sendChromeMessage({ type: "get_setting" }, (response) => {
+      console.log("setting:", JSON.stringify(response));
 
       if (response.status == true) {
         const data = response.setting;
         setSetting(data);
         setDataFormate(data.exportForm);
+        setRemoveDuplicate(data.removeDuplicate);
         setDelay(data.delay);
         setExtractCol(data.extractCol);
         setSelectLang(data.lang ?? "en");
         i18next.changeLanguage(data.lang ?? "en");
-
+        // i18next.changeLanguage(e ?? "en");
       } else {
-        // enqueueSnackbar(t(response.message));
+        api.error({
+          key: "error",
+          message: t(response.message),
+          duration: 2,
+          placement: "bottomLeft",
+        });
       }
     });
   };
 
   const expireDate = () => {
     if (licenseDetails) {
-      //return licenseDetails.expireAt;
-      //let expDate = new Date(licenseDetails.expireAt);
-      return dateFormat(licenseDetails.expireAt);
+      let expDate = new Date(licenseDetails?.expireAt);
+      const year = expDate.getUTCFullYear();
+      const month = expDate.getUTCMonth() + 1;
+      const day = expDate.getUTCDate();
+      return `${day}-${month}-${year}`;
     } else {
       return "";
     }
   };
 
-  const dateFormat = (dateString, showTime) => {
-    let expDate = new Date(dateString);
-    let optionsDate = { year: "numeric", month: "long", day: "numeric" };
-    //return expDate.toLocaleDateString("en-in", optionsDate)+(showTime? " "+expDate.toLocaleTimeString("en-in"):"");
-    const year = expDate.getUTCFullYear();
-    const month = expDate.getUTCMonth() + 1; // Months are zero-indexed, so we add 1
-    const day = expDate.getUTCDate();
-    return `${day}-${month}-${year}`;
-  };
-
   const renewLicenseKey = () => {
-    console.log("renewLicenseKey function called!"); // Debugging step
-    
-    let renewKeyData = {
-      key: licenseDetails?.key ?? '',
-      renew_key: renewKey
-    };
-  
-    console.log("Sending message:", { renew_key: renewKeyData, type: "renew" }); // Debugging step
-  
-    sendChromeMessage({ renew_key: renewKeyData, type: "renew" }, (response) => {
-      console.log("Response received:", response); // Debugging step
-  
-      if (response?.status === true) {
+    sendChromeMessage({ key: licenseDetails.key, renew_key: renewKey, type: "renew" }, (response) => {
+      if (response.status == true) {
         api.success({
           key: "success",
           message: response.message,
@@ -264,19 +271,21 @@ const FormComponent = () => {
       } else {
         api.error({
           key: "error",
-          message: response.message,
+          message: t(response.message),
           duration: 2,
           placement: "bottomLeft",
-        });
+        })
       }
     });
   };
-  
+
 
   const getLicenseDetails = () => {
     sendChromeMessage({ type: "get_details" }, (response) => {
-      console.log("get_Details", response)
+      console.log("License Details:", response);
+
       if (response.status == true) {
+        setLicenseDetails(response.detail);
         setIsLicenseValid(true);
         setLicenseMessage("");
       } else {
@@ -284,241 +293,9 @@ const FormComponent = () => {
         setLicenseDetails(null);
         setLicenseMessage(response.message);
       }
-
-      if (response.detail) {
-        setLicenseDetails(response.detail);
-        //fill the form details
-        setName(response.detail.name ?? "");
-        setEmail(response.detail.email ?? "");
-        setPhone(response.detail.phone ?? "");
-        setCity(response.detail.place ?? "");
-        setCountry(response.detail.country ?? "");
-        setKey(response.detail.key ?? "");
-      }
-
       setIsLoading(false);
     });
   };
-
-  useEffect(() => {
-    getResellerData();
-    getColumns();
-    getSetting();
-    getProductData();
-    getLicenseDetails();
-    getVersion();
-    getScrapeData();
-  }, []);
-
-  useEffect(() => {
-    let color = "#0855a4";
-    if (product) color = product.color;
-    if (rData.theme_setting?.["primary-color"]) color = rData.theme_setting["primary-color"];
-    setTheme({
-      token: {
-        colorPrimary: color,
-        fontFamily: "'Poppins', sans-serif",
-      },
-    });
-  }, [product, rData]);
-
-  useEffect(() => {
-    if (showValidation) {
-      setTimeout(() => setShowValidation(false), 2000);
-    }
-  }, [showValidation]);
-  // useEffect(() => {
-
-  //   if(licenseDetails){
-  //    if(!licenseDetails.enable || status ){
-
-  //    }
-  //   }
-
-  //  }, [licenseDetails]);
-
-  useEffect(() => {
-    checkLicense(key);
-  }, [key]);
-
-  function checkLicense(key) {
-    if (key.length == 19) {
-      sendChromeMessage(
-        { license_key: key, type: "license_verify" },
-        (response) => {
-          setKeyIsValid(response.status);
-          setLicenceKeyErrorMessage(response.message);
-        }
-      );
-    } else {
-      setKeyIsValid(false);
-      setLicenceKeyErrorMessage(t("invalidLicenseKey"));
-    }
-  }
-
-  const onActivateSubmit = async (e) => {
-
-    const msg = {
-      name: name,
-      email: email,
-      phone: `+${phone}`,
-      city: city,
-      country: country,
-      key: key,
-    };
-
-    sendChromeMessage({ data: msg, type: "license_active" }, (response) => {
-      if (response.status == true) {
-        setIsLicenseValid(true);
-        getLicenseDetails();
-        api.success({
-          key: "success",
-          message: t(response.message),
-          duration: 2,
-          placement: "bottomLeft",
-        })
-      } else {
-        setIsLicenseValid(false);
-        api.error({
-          key: "error",
-          message: t(response.message),
-          duration: 2,
-          placement: "bottomLeft",
-        })
-      }
-    });
-  };
-
-  const onSaveSetting = (e) => {
-    e.preventDefault();
-    setShowValidation(true);
-
-    let data = {
-      exportForm: dataFormate,
-      delay: delay,
-      extractCol: extractCol,
-      lang: selectLang
-    };
-
-    sendChromeMessage({ setting: data, type: "save_setting" }, (response) => {
-      if (response.status) {
-        notification.success({
-          message: t("settingSave"),
-          placement: "bottomLeft",
-          duration: 3
-        });
-        i18next.changeLanguage(selectLang);
-      } else {
-        notification.error({
-          message: t("settingSaveFailed"),
-          placement: "bottomLeft",
-          duration: 3
-        });
-      }
-    });
-  };
-
-
-  const onScrape = (e) => {
-    e.preventDefault();
-    setShowValidation(true);
-
-    if (keyword === "") {
-      api.error({
-        key: "error",
-        message: t(response.message),
-        duration: 2,
-        placement: "bottomLeft",
-      })
-      return;
-    }
-    console.log("countryCode:", countryCode);
-
-    const countryDialCode = "+" + countryList.find(
-      (c) => c.countryNameEn == countryCode
-    ).countryCallingCode;
-
-    sendChromeMessage({
-      keyword: keyword,
-      location: location,
-      network: network,
-      country: countryDialCode,
-      type: "scrap"
-    }, (response) => {
-      if (response.status === true) {
-        api.success({
-          key: "success",
-          message: t(response.message),
-          duration: 2,
-          placement: "bottomLeft",
-        })
-      } else {
-        api.error({
-          key: "error",
-          message: t(response.message),
-          duration: 2,
-          placement: "bottomLeft",
-        })
-      }
-    });
-  };
-
-  const onDownloadScrapData = () => {
-    sendChromeMessage(
-      { type: "download", keyword: selectedKeywordId },
-      (response) => {
-        if (response.status == true) {
-          enqueueSnackbar(t(response.message), { variant: "success" });
-          setSelectedKeywordId("select");
-        } else {
-          api.error({
-            key: "error",
-            message: t(response.message),
-            duration: 2,
-            placement: "bottomLeft",
-          })
-        }
-      }
-    );
-  };
-
-  const onDeleteScrapData = () => {
-    sendChromeMessage(
-      { type: "delete_scrap", keyword: selectedKeywordId },
-      (response) => {
-        if (response.status == true) {
-          api.success({
-            key: "error",
-            message: t(response.message),
-            duration: 2,
-            placement: "bottomLeft",
-          })
-          // enqueueSnackbar(t(response.message), { variant: "success" });
-          setSelectedKeywordId("select");
-          getScrapeData();
-        }
-      }
-    );
-  };
-
-  const onClearScrapData = () => {
-    sendChromeMessage(
-      { type: "clear_scrap", keyword: selectedKeywordId },
-      (response) => {
-
-        if (response.status == true) {
-          api.success({
-            key: "error",
-            message: t(response.message),
-            duration: 2,
-            placement: "bottomLeft",
-          })
-          setScrapData({});
-        }
-      }
-    );
-  };
-
   const get_youtube_thumbnail = (url, quality) => {
     if (url) {
       var video_id, thumbnail, result;
@@ -550,49 +327,281 @@ const FormComponent = () => {
     return false;
   };
 
-  const getTrial = () => {
-    sendChromeMessage({ type: "get_trial" }, (response) => {
-      console.log("get one day trial demo", response)
-      setKey(response.key);
+  useEffect(() => {
+    columns.forEach((x) => {
+      setExtractCol((col) => {
+        return { ...col, [x.value]: true };
+      });
+    });
+    getResellerData();
+    getSetting();
+    getProductData();
+    getLicenseDetails();
+  }, []);
 
-      if (response.status) {
+  useEffect(() => {
+    checkLicense(key);
+  }, [key]);
+
+  function checkLicense(key) {
+    if (key.length == 19) {
+      sendChromeMessage(
+        { license_key: key, type: "license_verify" },
+        (response) => {
+          console.log("checkLicenseKey:", JSON.stringify(response));
+          setKeyIsValid(response.status);
+        }
+      );
+    } else {
+      setKeyIsValid(false);
+    }
+  }
+
+  const [errors, setErrors] = useState({});
+
+  const onActivateSubmit = async () => {
+    console.log("button submit", { name });
+
+    const newErrors = {};
+    if (!name) newErrors.name = "Name is required";
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Invalid email address";
+    }
+    if (!phone) newErrors.phone = "Phone is required";
+    if (!city) newErrors.city = "City is required";
+    if (!country) newErrors.country = "Country is required";
+    if (!key) newErrors.key = "License Key is required";
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      return;
+    }
+
+    const msg = {
+      name: name,
+      email: email,
+      phone: `+${phone}`,
+      city: city,
+      country: country,
+      key: key,
+    };
+
+    sendChromeMessage({ data: msg, type: "license_active" }, (response) => {
+      console.log("activate:", JSON.stringify(response));
+
+      if (response.status == true) {
+        setIsLicenseValid(true);
+        getLicenseDetails();
         api.success({
           key: "success",
           message: t(response.message),
           duration: 2,
           placement: "bottomLeft",
-        })
+        });
+      } else {
+        setIsLicenseValid(false);
+        api.error({
+          key: "success",
+          message: t(response.message),
+          duration: 2,
+          placement: "bottomLeft",
+        });
+      }
+    });
+  };
+
+  const onSaveSetting = (values) => {
+    const data = {
+      exportForm: dataFormate,
+      removeDuplicate: values.removeDuplicate,
+      delay: values.delay,
+      extractCol: extractCol,
+      lang: selectLang,
+    };
+    setShowValidation(true);
+
+    sendChromeMessage({ setting: data, type: "save_setting" }, (response) => {
+      if (response.status) {
+        i18next.changeLanguage(selectLang)
+        api.success({
+          key: "error",
+          message: t(response.message),
+          duration: 2,
+          placement: "bottomLeft",
+        });
       } else {
         api.error({
           key: "error",
           message: t(response.message),
           duration: 2,
           placement: "bottomLeft",
-        })
+        });
       }
-
-    })
-  }
-  const getVersion = () => {
-
-    sendChromeMessage({ type: "get_version" }, (response) => {
-      console.log("Background  check version0", response);
-      // let data = response.version.replace(/\./g, "");
-      setLocalmanifestVersion(response.version)
-
     });
-
-  }
-  const updateCancel = () => {
-    let data = product?.forceUpdate ?? ""
-    if (data) {
-      setIsUpdate(true)
-    } else {
-      console.error("data", data)
-      setIsUpdate(false);
+  };
+  const onScrape = (e) => {
+    e.preventDefault();
+    setShowValidation(true);
+    if (keyword == "") {
+      return enqueueSnackbar(t("keywordIsRequired"));
     }
 
+
+    console.log("countryCode:", countryCode);
+
+    const countryDialCode = "+" + countryList.find(
+      (c) => c.countryNameEn == countryCode
+    ).countryCallingCode;
+
+    sendChromeMessage({
+      keyword: keyword,
+      location: location,
+      network: network,
+      country: countryDialCode,
+      type: "scrap"
+    }, (response) => {
+      if (response.status == true) {
+        api.success({
+          key: "error",
+          message: t(response.message),
+          duration: 2,
+          placement: "bottomLeft",
+        });
+      } else {
+        api.error({
+          key: "error",
+          message: t(response.message),
+          duration: 2,
+          placement: "bottomLeft",
+        });
+      }
+    });
   };
+  // const onScrape = (e) => {
+  //   e.preventDefault();
+  //   setShowValidation(true);
+  //   if (keyword == "") {
+  //     return api.error({
+  //       key: "error",
+  //       message: "keyword is required",
+  //       duration: 2,
+  //       placement: "bottomLeft",
+  //     });
+  //   }
+
+  // sendChromeMessage({ keyword: keyword, type: "scrap" }, (response) => {
+  //   console.log("scrap:", JSON.stringify(response));
+  //   if (response.status == true) {
+  //     api.success({
+  //       key: "error",
+  //       message: response.message,
+  //       duration: 2,
+  //       placement: "bottomLeft",
+  //     });
+  //   } else {
+  //     api.error({
+  //       key: "error",
+  //       message: response.message,
+  //       duration: 2,
+  //       placement: "bottomLeft",
+  //     });
+  //   }
+
+  getScrapeData();
+  const onDownloadScrapData = () => {
+    sendChromeMessage(
+      { type: "download", keyword: selectedKeywordId },
+      (response) => {
+        console.log("download: ", response);
+      }
+    );
+  };
+
+  const onDeleteScrapData = () => {
+    sendChromeMessage(
+      { type: "delete_scrap", keyword: selectedKeywordId },
+      (response) => {
+        if (response.status == true) {
+          api.success({
+            key: "success",
+            message: t(response.message),
+            duration: 2,
+            placement: "bottomLeft",
+          });
+          setSelectedKeywordId("select");
+          getScrapeData();
+        } else {
+          api.error({
+            key: "error",
+            message: t(response.message),
+            duration: 2,
+            placement: "bottomLeft",
+          });
+        }
+      }
+    );
+  };
+
+  const onClearScrapData = () => {
+    sendChromeMessage(
+      { type: "clear_scrap", keyword: selectedKeywordId },
+      (response) => {
+        if (response.status == true) {
+          api.success({
+            key: "success",
+            message: t(response.message),
+            duration: 2,
+            placement: "bottomLeft",
+          });
+          setScrapData({});
+        } else {
+          api.error({
+            key: "error",
+            message: t(response.message),
+            duration: 2,
+            placement: "bottomLeft",
+          });
+        }
+      }
+    );
+  };
+
+  const dateFormat = (dateString, showTime) => {
+    let expDate = new Date(dateString);
+    let optionsDate = { year: "numeric", month: "long", day: "numeric" };
+    //return expDate.toLocaleDateString("en-in", optionsDate)+(showTime? " "+expDate.toLocaleTimeString("en-in"):"");
+    const year = expDate.getUTCFullYear();
+    const month = expDate.getUTCMonth() + 1; // Months are zero-indexed, so we add 1
+    const day = expDate.getUTCDate();
+    return `${day}-${month}-${year}`;
+  };
+
+  const onSearch = (value) => {
+    console.log("search:", value);
+  };
+
+  function TabPanel(props) {
+    const { children, value, index, ...other } = props;
+
+    return (
+      <Typography
+        role="tabpanel"
+        hidden={value !== index}
+        id={`full-width-tabpanel-${index}`}
+        aria-labelledby={`full-width-tab-${index}`}
+        {...other}
+      >
+        {value === index && (
+          <Space style={{ padding: "24px" }}>
+            <Typography.Text>{children}</Typography.Text>
+          </Space>
+        )}
+      </Typography>
+    );
+  }
 
   const totalSlider = () => {
     var count = 0;
@@ -611,37 +620,100 @@ const FormComponent = () => {
 
     return count;
   };
-  console.log("Product Site URL:", product?.siteUrl);
-  console.log("Buy URL:", rData?.buy_url);
+
+  const getBannerUrl = (url) => {
+    return url && url.trim() !== ""
+      ? url
+      : "https://picsum.photos/id/237/200/300";
+  };
+
+  const cardHeadStyle = {
+    padding: "8px",
+  };
+
+  const ContactCard = (
+    <Card
+      size="small"
+      style={{
+        width: 300,
+      }}
+      bodyStyle={{
+        padding: 10,
+      }}
+    >
+     <Flex align="center" style={{ marginBottom: 8 }}>
+        <PhoneOutlined style={{ fontSize: "14px", marginRight: 18 }} />
+        <div>
+          <Text type="secondary">Phone</Text>
+          <br />
+          <Text>{licenseDetails?.phone || "-"}</Text>
+        </div>
+      </Flex>
+      <Divider style={{ margin: "6px 0" }} />
+      <Flex align="center" style={{ marginBottom: 8 }}>
+        <MailOutlined style={{ marginRight: 12, fontSize: 18 }} />
+        <div>
+          <Text type="secondary">Email</Text>
+          <br />
+          <Text>{licenseDetails?.email || "-"}</Text>
+        </div>
+      </Flex>
+      <Divider style={{ margin: "6px 0" }} />
+      <Flex align="center">
+        <GlobalOutlined style={{ marginRight: 12, fontSize: 18 }} />
+        <div>
+          <Text type="secondary">Website</Text>
+          <br />
+          {/* <Link
+            href="https://www.instagram.com/_moonlight._.studio_/"
+            target="_blank"
+          > */}
+          {licenseDetails?.website || "-"}
+          {/* </Link> */}
+        </div>
+      </Flex>
+    </Card>
+  );
 
   return (
     <>
       {contextHolder}
-      <ConfigProvider theme={theme} >
+      {/* <ConfigProvider theme={theme}> */}
         <Modal
-          styles={{ body: { margin: 0, } }}
           title={t("renewLicense")}
           open={renewOpen}
-          onCancel={renewCloseForm}
+          onCancel={() => setRenewOpen(false)}
           footer={[
-            <Button color="#000" key="renew" type="primary" onClick={renewLicenseKey}>
-              {t("renew")}
-            </Button>,
-            product && rData?.active_shop && (
-              <Button key="buy">
-                <a href={product?.siteUrl || rData?.buy_url} target="_blank" rel="noopener noreferrer">
-                  {t("buyNow")}
-                </a>
+            <Row gutter={[16, 16]}>
+              <Col span={12}>
+              <Button
+              style={{ color: "#fff", backgroundColor: "#2d49d8" }}
+              key="renew" type="primary" onClick={renewLicenseKey}>
+                {t("renew")}
               </Button>
-            ),
+              </Col>
+
+              <Col span={12}>
+                {product && rData?.active_shop && (
+                  <Button key="buy" block>
+                    <a
+                      href={product?.siteUrl || rData?.buy_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <ShopOutlined /> {t("buyNow")}
+                    </a>
+                  </Button>
+                )}
+              </Col>
+            </Row>,
           ]}
         >
           <Input
             value={renewKey}
             onChange={(e) => setRenewKey(e.target.value)}
             placeholder={t("enterLicenseKey")}
-            prefix={<MailOutlined />}
-            suffix={keyIsValid ? <CheckCircleOutlined /> : <CloseCircleOutlined />}
+            prefix={<KeyOutlined />}
           />
           <Paragraph>{t("renewDBMbeforeExpire")}</Paragraph>
           <Paragraph>{t("subscription1Y")}</Paragraph>
@@ -649,476 +721,1226 @@ const FormComponent = () => {
           <Paragraph>{t("subscription1M")}</Paragraph>
         </Modal>
 
-        <div style={{ backgroundColor: theme.token.colorPrimary, padding: 12, opacity: 0.9, height: "80px" }}>
-          <Space align="center" style={{ width: "100%", display: "flex", justifyContent: "center" }}>
-            <img src={logo} alt={product?.name ?? ""} style={{ width: 45, height: 45 }} />
-            <Title level={4} style={{ color: "white", margin: 0 }}>
-              {rData?.name ?? t("imName")}
-            </Title>
-          </Space>
-          {isLicenseValid && (
-            <Space style={{ display: "flex", justifyContent: "center", width: "100%", alignItems: "center" }}>
-              <Text style={{ color: "white", fontSize: "12px" }}>{t("expireDate")}</Text>
-              <Tag color="cyan">{expireDate()}</Tag>
-              <Tag onClick={renewOpenForm}>
-                {t("renewLabel")}
-              </Tag>
-            </Space>
-          )}
-        </div>
+        <>
+          {!showSecond && (
+            <>
+              <Card
+                size="small"
+                title={
+                  <Flex justify="space-between" align="baseline">
+                    <Flex flexDirection="column" align="baseline">
+                      <Image
+                        src={logo}
+                        alt={product?.name ?? ""}
+                        height={40}
+                        width={40}
+                        preview={false}
+                      />
+                      <Typography.Paragraph
+                        style={{
+                          color: "#000",
+                          fontSize: "16px",
+                          margin: "0",
+                        }}
+                      >
+                        DBM Social Extractor
+                      </Typography.Paragraph>
+                    </Flex>
+                    <Flex flexDirection="column" align="self-end">
+                    {theme ? (
+                      <SunOutlined
+                        key="SunOutlined"
+                        onClick={toggleTheme}
+                        style={{ marginRight: 10, fontSize: "18px" }}
+                      />
+                    ) : (
+                      <MoonOutlined
+                        key="MoonOutlined"
+                        onClick={toggleTheme}
+                        style={{ marginRight: 10, fontSize: "18px" }}
+                      />
+                    )}
+                    <Popover placement="left" title={ContactCard} arrow={false}>
+                      <Image
+                        src={icon}
+                        alt="Info"
+                        height={20}
+                        width={20}
+                        preview={false}
+                        style={{
+                          cursor: "pointer",
+                          marginRight: "10px",
+                        }}
+                      />
+                    </Popover>
+                  </Flex>
+                    {/* <Tooltip
+                      placement="rightTop"
+                      title={ContactCard}
+                      color="white"
+                      overlayInnerStyle={{
+                        padding: 0,
+                        width: "100%",
+                      }}
+                      overlayStyle={{
+                        width: "100%",
+                        whiteSpace: "normal",
+                        zIndex: 9999,
+                      }}
+                    >
+                      <Image
+                        src={icon}
+                        alt="Info"
+                        height={20}
+                        width={20}
+                        preview={false}
+                        style={{
+                          cursor: "pointer",
+                          marginRight: "10px",
+                        }}
+                      />
+                    </Tooltip> */}
+                  </Flex>
+                }
+                bodyStyle={{
+                  padding: 0,
+                }}
+                headStyle={cardHeadStyle}
+              ></Card>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "24px",
+                  backgroundColor: "#ffffff",
+                }}
+              >
+                <Image
+                  src={logo}
+                  alt="Google Logo"
+                  preview={false}
+                  loading="lazy"
+                  style={{
+                    width: "150px",
+                    height: "150px",
+                    objectFit: "contain",
+                    marginBottom: "24px",
+                  }}
+                />
 
-        {isLoading ? (
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "80vh" }}>
-            <Spin tip={t("loading")} />
-          </div>
-        ) : (
-          <div>
-            {isLicenseValid ? (
-              <>
-                <Modal styles={{ body: { margin: 0, } }}
-                  open={isUpdate}
-                  onCancel={updateCancel}
-                  footer={null}
-                  closable={!product?.forceUpdate}
+                <Space
+                  direction="vertical"
+                  align="center"
+                  style={{ width: "100%" }}
                 >
-                  <a href={product?.updateUrl ?? ""} target="_blank" rel="noopener noreferrer">
-                    <img src={product?.updateBannerUrl ?? ""} alt="" style={{ width: "100%" }} />
-                  </a>
-                </Modal>
-                <div style={{  backgroundColor: theme.token.colorPrimary, padding: "8px 0px" }}>
-                  <Row justify="center" align="middle">
-                    {TAB_ITEMS.map((x, i) => (
-                      <Col span={6} key={"tab-" + i} style={{ textAlign: "center" }}>
-                        <Button
-                          type={selectedTabId === x ? "default" : "text"}
-                          onClick={() => setSelectedTabId(x)}
-                          size="middle"
-                          align="center"
-                          style={{ color: selectedTabId === x ? "black" : "white" }}
-                        >
-                          {t(x)}
-                        </Button>
-                      </Col>
-                    ))}
-                  </Row>
-                </div>
-                <div>
-                  {selectedTabId === "home" && (
+                  <Title level={5} style={{ margin: 0 }}>
+                    Welcome to DBM Social Extractor
+                  </Title>
+
+                  <Paragraph style={{ textAlign: "center", maxWidth: "300px" }}>
+                    This Chrome extension is not endorsed or certified by Social extension ™. This is an unofficial enhancement for Social extension™.
+                  </Paragraph>
+
+                  <Button
+                    style={{ color: "#fff", backgroundColor: "#2d49d8" }}
+                    type="primary"
+                    block
+                    onClick={() => setShowSecond((prev) => !prev)}
+                  >
+                    <SendOutlined /> Get Started
+                  </Button>
+                </Space>
+              </div>
+              <Card
+                bordered
+                style={{
+                  width: "100%",
+                  textAlign: "center",
+                  position: "absolute",
+                  bottom: 0,
+                }}
+                bodyStyle={{ padding: "12px" }}
+              >
+                <Text>V1.1 | DBM Social Extractor</Text>
+              </Card>
+            </>
+          )}
+        </>
+
+        {showSecond && (
+          <Typography
+            style={{
+              width: "100%",
+              height: 50,
+              // backgroundColor: theme.token.colorPrimary,
+            }}
+          >
+            <Card
+              size="small"
+              title={
+                <Flex justify="space-between" align="baseline">
+                  <Flex flexDirection="column" align="baseline">
+                    <Image
+                      src={logo}
+                      alt={product?.name ?? ""}
+                      height={40}
+                      width={40}
+                      preview={false}
+                    />
+                    <Typography.Paragraph
+                      style={{ color: "#000", fontSize: "16px", margin: "0" }}
+                    >
+                      {rData?.name ?? "DBM Social Extractor"}
+                    </Typography.Paragraph>
+                  </Flex>
+                  {!isLicenseValid ? (
+                    <Tooltip
+                      placement="rightTop"
+                      title={ContactCard}
+                      color="white"
+                      overlayInnerStyle={{
+                        padding: 0,
+                        width: "100%",
+                      }}
+                      overlayStyle={{
+                        width: "100%",
+                        whiteSpace: "normal",
+                        zIndex: 9999,
+                      }}
+                    >
+                      <Image
+                        src={icon}
+                        alt="Info"
+                        height={20}
+                        width={20}
+                        preview={false}
+                        style={{
+                          cursor: "pointer",
+                          marginRight: "10px",
+                        }}
+                      />
+                    </Tooltip>
+                  ) : (
                     <>
-                      <Form style={{ maxHeight: "500px", marginTop: "-30px", padding: "25px" }}>
-                        <Title level={5}>{t("welcome")} {licenseDetails?.name ?? ""}</Title>
-                        <Row gutter={16}>
-                          <Col span={12}>
-                            <Form.Item
-                              validateStatus={keyword === "" && showValidation ? "error" : ""}
-                              help={keyword === "" && showValidation ? t("keywordIsRequired") : ""}
-                            >
-                              <Input
-                                value={keyword}
-                                onChange={(e) => setKeyword(e.target.value)}
-                                placeholder={t("keyword")}
-                              />
-                            </Form.Item>
-                          </Col>
-                          <Col span={12}>
-                            <Form.Item
-                              validateStatus={location === "" && showValidation ? "error" : ""}
-                              help={location === "" && showValidation ? t("locationReq") : ""}
-                            >
-                              <Input
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                                placeholder={t("enterLocation")}
-                              />
-                            </Form.Item>
-                          </Col>
-                        </Row>
-                        <Row gutter={16}>
-                          <Col span={12}>
-                            <Select
-                              value={network}
-                              onChange={setNetwork}
-                              style={{ width: "100%" }}
-                              placeholder={t("network")}
-                            >
-                              <Option value="facebook">{t("facebook")}</Option>
-                              <Option value="twitter">{t("twitter")}</Option>
-                              <Option value="linkedin">{t("linkedin")}</Option>
-                              <Option value="instagram">{t("instagram")}</Option>
-                            </Select>
-                          </Col>
-                          <Col span={12}>
-                            <Select
-                              value={countryCode}
-                              onChange={setCountryCode}
-                              style={{ width: "100%" }}
-                              placeholder={t("selectCountry")}
-                              showSearch
-                            >
-                              {countryList.map((x) => (
-                                <Option key={x.countryCode} value={x.countryNameEn}>
-                                  {x.countryNameEn}
-                                </Option>
-                              ))}
-                            </Select>
-                          </Col>
-                        </Row>
-                        <Button
-                          onClick={onScrape}
-                          type="primary"
-                          htmlType="submit"
-                          style={{ marginTop: 10, display: "block", marginLeft: "auto", marginRight: "auto" }}
-
-                        >
-                          {t("start")}
-                        </Button>
-                        {/* Add slider content here if needed */}
-                      </Form>
-                      <Row gutter={[16, 16]} justify="center">
-                        <Col xs={24}>
-                          <Space direction="vertical" style={{ width: "100%", marginTop: "10px" }}>
-                            {product && (
-                              <Carousel
-                                autoplay
-                                autoplaySpeed={15000}
-                                dotPosition="bottom"
-                                beforeChange={(current, next) => setActiveStep(next)}
-                                style={{ maxHeight: "250px", overflow: "hidden" }}
-                              >
-                                {/* Ad Banner */}
-                                {product.showAd && product.adBannerUrl && (
-                                  <Typography.Link href={product.adBannerUrl} target="_blank" style={{ display: "block", textAlign: "center" }}>
-                                    <img src={product.adBannerUrl} alt="Ad Banner" style={{ height: 200, maxWidth: "100%" }} />
-                                  </Typography.Link>
-                                )}
-
-                                {/* YouTube Video Thumbnail */}
-                                {product.demoVideoUrl && product.demoVideoUrl.includes("youtube.com") && (
-                                  <Typography.Link href={product.demoVideoUrl} target="_blank" style={{ position: "relative", display: "block" }}>
-                                    <PlayCircleOutlined
-                                      style={{
-                                        position: "absolute",
-                                        top: "50%",
-                                        left: "50%",
-                                        transform: "translate(-50%, -50%)",
-                                        fontSize: "110px",
-                                        color: "grey",
-                                        opacity: 0.8,
-                                        mixBlendMode: "exclusion",
-                                      }}
-                                    />
-                                    <img
-                                      src={get_youtube_thumbnail(product.demoVideoUrl, "high")}
-                                      alt="YouTube Video"
-                                      style={{
-                                        height: 200, maxWidth: 350, width: "100%", display: "flex", alignItems: "center", marginTop: "-30px"
-                                      }}
-                                    />
-                                  </Typography.Link>
-                                )}
-                              </Carousel>
-                            )}
-                          </Space>
-                        </Col>
-
-                        {/* Navigation Buttons */}
-                        <Flex justify="space-between" style={{ width: "100%", marginTop: "-15px" }}>
-                          <Button
-                            type="text"
-                            size="small"
-                            onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
-                            disabled={activeStep === 0}
-                          >
-                            {themeslider.direction === "rtl" ? <RightOutlined /> : <LeftOutlined />}
-                            Back
-                          </Button>
-                          <Button
-                            type="text"
-                            size="small"
-                            onClick={() => setActiveStep((prev) => Math.min(prev + 1, totalSlider() - 1))}
-                            disabled={activeStep === totalSlider() - 1}
-                          >
-                            Next
-                            {themeslider.direction === "rtl" ? <LeftOutlined /> : <RightOutlined />}
-                          </Button>
-
-                        </Flex>
-                        {/* <Row  style={{ marginTop: "-15px" , display:"flex", justifyContent:"space-between"}}>
-                              <Col>
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  onClick={() => setActiveStep((prev) => Math.max(prev - 1, 0))}
-                                  disabled={activeStep === 0}
-                                >
-                                  {themeslider.direction === "rtl" ? <RightOutlined /> : <LeftOutlined />}
-                                  Back
-                                </Button>
-                              </Col>
-
-                              <Col>
-                                <Button
-                                  type="text"
-                                  size="small"
-                                  onClick={() => setActiveStep((prev) => Math.min(prev + 1, totalSlider() - 1))}
-                                  disabled={activeStep === totalSlider() - 1}
-                                >
-                                  Next
-                                  {themeslider.direction === "rtl" ? <LeftOutlined /> : <RightOutlined />}
-                                </Button>
-                              </Col>
-                            </Row> */}
-
-                      </Row>
+                    {theme ? (
+                      <SunOutlined
+                        key="SunOutlined"
+                        onClick={toggleTheme}
+                        style={{ marginLeft: 90, fontSize: "18px" }}
+                      />
+                    ) : (
+                      <MoonOutlined
+                        key="MoonOutlined"
+                        onClick={toggleTheme}
+                        style={{ marginLeft: 90, fontSize: "18px" }}
+                      />
+                    )}
+                    <span
+                      style={{
+                        cursor: "pointer",
+                        color: "blue",
+                        fontSize: "20px",
+                      }}
+                      onClick={() => setShowSettings((prev) => !prev)}
+                    >
+                      {showSettings ? <CloseOutlined /> : <SettingOutlined />}
+                    </span>
                     </>
-
-
                   )}
+                </Flex>
+              }
+              bodyStyle={{
+                padding: 0,
+              }}
+              headStyle={cardHeadStyle}
+            ></Card>
+            {showSettings && (
+              <Row
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "black",
+                }}
+              >
+                <Row justify="center">
+                  <Col style={{ marginTop: 7, padding: "8px 16px" }}>
+                    <Card size="small">
+                      <Form
+                        form={form}
+                        layout="vertical"
+                        onFinish={onSaveSetting}
+                        initialValues={{
+                          removeDuplicate: removeDuplicate,
+                          delay: delay,
+                          language: "en",
+                        }}
+                      >
+                        <Row
+                          style={{ display: "flex", flexDirection: "column", padding: "10px" }}
+                        >
 
-                  {selectedTabId === "data" && (
-                    <div style={{ padding: 12 }}>
-                      {Object.keys(scrapData).length === 0 ? (
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
-                          <Text type="warning">{t("noDataFound")}</Text>
-                        </div>
+                          <Row style={{ marginTop: "-20px" }} gutter={[16, 16]}>
+                            <Col span={12}>
+                              <Form.Item label={t("delay")} name="delay">
+                                <Input
+                                  type="number"
+                                  placeholder="Enter delay in seconds"
+                                  min={1}
+                                  autoComplete="off"
+                                  onChange={(e) => setDelay(e.target.value)}
+                                />
+                              </Form.Item>
+                            </Col>
+                            <Col span={12}>
+                              <Form.Item
+                                label={t("language")}
+                                name="language"
+                              >
+                                <Select
+                                  value={selectLang}
+                                  onChange={setSelectLang}
+                                  showSearch
+                                  filterOption={(input, option) =>
+                                    option.children.toLowerCase().includes(input.toLowerCase())
+                                  }
+                                  style={{ width: "100%" }}
+                                  placeholder={t("selectLanguage")}
+                                >
+                                  {langList.map((x) => (
+                                    <Select.Option key={x.key} value={x.key}>
+                                      {x.name}
+                                    </Select.Option>
+                                  ))}
+                                </Select>
+                              </Form.Item>
+                            </Col>
 
-                      ) : (
-                        <>
-                          <Select
-                            value={selectedKeywordId}
-                            onChange={setSelectedKeywordId}
-                            style={{ width: "100%", marginBottom: 16 }}
-                            size="large"
-                            placeholder={t("selectKeyword")}
-                          >
-                            <Option value="select">Select</Option>
-                            {Object.keys(scrapData).map((key) => (
-                              <Option key={key} value={key}>
-                                {scrapData[key].name}
-                              </Option>
-                            ))}
-                          </Select>
-                          {selectedKeywordId !== "select" && (
-                            <>
-                              <Space direction="vertical">
-                                <Text>
-                                  {t("totalData")}: {(scrapData[selectedKeywordId]?.data ?? []).length}
+                          </Row>
+                        </Row>
+
+                        <Typography.Text strong>
+                        {t("extractingCol")}
+                        </Typography.Text>
+
+                        <Row>
+                          {columns.map((col) => (
+                            <Col span={12} key={col.value}>
+                              <Checkbox
+                                checked={extractCol[col.value]}
+                                style={{ marginTop: "12px" }}
+                                onChange={(e) =>
+                                  setExtractCol((ec) => ({
+                                    ...ec,
+                                    [col.value]: e.target.checked,
+                                  }))
+                                }
+                              >
+                                {col.label}
+                              </Checkbox>
+                            </Col>
+                          ))}
+                        </Row>
+
+                        <Row gutter={[16, 16]} style={{ marginTop: 8 }}>
+                          <Col span={24}>
+                            <Button
+                              style={{ color: "#fff", backgroundColor: "#2d49d8" }}
+                              type="primary" htmlType="submit" block>
+                              <SaveOutlined /> {t("save")}
+                            </Button>
+                          </Col>
+                        </Row>
+                      </Form>
+                    </Card>
+                  </Col>
+                </Row>
+              </Row>
+            )}
+          </Typography>
+        )}
+        <br />
+        {showSecond && (
+          <>
+            {!showSettings && (
+              <>
+                {isLoading ? (
+                  <Typography
+                    className="mainBox"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Spin tip="Loading... please wait" />
+                  </Typography>
+                ) : (
+                  <Typography>
+                    {isLicenseValid ? (
+                      <Typography style={{ padding: "8px 16px" }}>
+                        <Card
+                          size="small"
+                          bodyStyle={{
+                            padding: 3,
+                            width: "100%",
+                          }}
+                        >
+                          <Flex justify="space-between" align="center">
+                            <Flex justify="flex-start" align="center">
+                              <Popover
+                                title={
+                                  <Text copyable>
+                                    {licenseDetails?.key ?? ""}
+                                  </Text>
+                                }
+                              >
+                                <Avatar
+                                  src=""
+                                  size={30}
+                                  icon={<UserOutlined />}
+                                />
+                              </Popover>
+                              <Typography style={{ marginLeft: 7 }}>
+                                <Text strong style={{ fontSize: 14 }}>
+                                  {licenseDetails?.name ?? ""}
                                 </Text>
-                                <Text>
-                                  {t("lastDate")}: {dateFormat(scrapData[selectedKeywordId]?.createdAt, true)}
-                                </Text>
-                              </Space>
-                              <Row justify="center" style={{ marginTop: 16 }}>
-                                <Space>
-                                  <Button type="primary" onClick={onDownloadScrapData}>
-                                    {t("download")}
-                                  </Button>
-                                  <Button danger onClick={onDeleteScrapData}>
-                                    {t("delete")}
-                                  </Button>
+                                <br />
+                                <Flex justify="space-between" align="center">
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                   {t("expireDate")}{" "}
+                                    <Text
+                                      strong
+                                      style={{ color: "black", fontSize: 11 }}
+                                    >
+                                      {expireDate()}
+                                    </Text>
+                                  </Text>
+                                </Flex>
+                              </Typography>
+                            </Flex>
+
+                            <Flex align="center">
+                              <Button
+                                type="primary"
+                                size="small"
+                                onClick={renewOpenForm}
+                                style={{
+                                  padding: "0px 10px",
+                                  color: "#fff", backgroundColor: "#2d49d8"
+                                }}
+                              >
+                                <Space size={4} style={{ width: "100%" }}>
+                                  <span
+                                    style={{
+                                      height: 5,
+                                      width: 5,
+                                    backgroundColor: "#fff",
+                                      borderRadius: "50%",
+                                      display: "inline-block",
+                                      marginBottom: 4,
+                                     
+                                    }}
+                                  />
+                                 {t("renew")}
                                 </Space>
+                              </Button>
+                            </Flex>
+                          </Flex>
+                        </Card>
+                        <Typography
+                          style={{
+                            // background: theme.token.colorPrimary,
+                            marginTop: 5,
+                            marginBottom: 5,
+                          }}
+                        >
+                          <Card
+                            size="small"
+                            bodyStyle={{
+                              padding: 4,
+                            }}
+                          >
+                            <Row
+                              gutter={[16, 16]}
+                              align="middle"
+                              justify="center"
+                            >
+                              <Col span={24}>
+                                <Segmented
+                                  options={[
+                                    {
+                                      value:"home",
+                                      label:t("home")
+                                    },
+                                    {
+                                      value:"data",
+                                      label:t("data")
+                                    },
+                                    {
+                                      value:"help",
+                                      label:t("help")
+                                    }
+                                  ]}
+                                  value={TAB_ITEMS[selectedTabId]}
+                                  onChange={(value) => {
+                                    const index = TAB_ITEMS.indexOf(value);
+                                    setSelectedTabId(index);
+                                  }}
+                                  block
+                                  style={{
+                                    width: "100%",
+                                    backgroundColor: "#f0f0f0",
+                                    borderRadius: 8,
+                                    padding: 4,
+                                  }}
+                                />
+                              </Col>
+                            </Row>
+                          </Card>
+                        </Typography>
+                        <Typography className="mainBox">
+                          {selectedTabId == 0 ? (
+                            <>
+                              <Row
+                                gutter={[0, 0]}
+                                align="middle"
+                                justify="center"
+                                style={{ flexDirection: "column" }}
+                              >
+                                <Card
+                                  style={{ width: 320, borderRadius: 10 }}
+                                  bodyStyle={{
+                                    padding: "6px 7px",
+                                  }}
+                                >
+                                  <Form layout="vertical">
+                                    {/* First Row */}
+                                    <Row gutter={[16, 16]}>
+                                      <Col span={12}>
+                                        <Form.Item
+                                          name="keyword"
+                                          label={t("keyword")}
+                                          validateStatus={keyword === "" && showValidation ? "error" : ""}
+                                          help={keyword === "" && showValidation ? t("keywordIsRequired") : ""}
+                                        >
+                                          <Input
+                                            placeholder={t("keyword")}
+                                            prefix={<LinkOutlined />}
+                                            value={keyword}
+                                            onChange={(e) => setKeyword(e.target.value)}
+                                          />
+                                        </Form.Item>
+                                      </Col>
+
+                                      <Col span={12}>
+                                        <Form.Item
+                                          name="location"
+                                          label={t("location")}
+                                          validateStatus={location === "" && showValidation ? "error" : ""}
+                                          help={location === "" && showValidation ? t("locationReq") : ""}
+                                        >
+                                          <Input
+                                            placeholder={t("enterLocation")}
+                                            prefix={<LinkOutlined />}
+                                            value={location}
+                                            onChange={(e) => setLocation(e.target.value)}
+                                          />
+                                        </Form.Item>
+                                      </Col>
+                                    </Row>
+
+                                    {/* Second Row */}
+                                    <Row gutter={[16, 16]}>
+                                      <Col span={12}>
+                                        <Form.Item name="network" label={t("network")}>
+                                          <Select
+                                            defaultValue={'facebook'}
+                                            value={network}
+                                            onChange={(value) => setNetwork(value)}
+                                            placeholder={t("network")}
+                                          >
+                                            <Option value="facebook">{t("facebook")}</Option>
+                                            <Option value="twitter">{t("twitter")}</Option>
+                                            <Option value="linkedin">{t("linkedin")}</Option>
+                                            <Option value="instagram">{t("instagram")}</Option>
+                                          </Select>
+                                        </Form.Item>
+                                      </Col>
+
+                                      <Col span={12}>
+                                        <Form.Item name="country" label={t("selectCountry")}>
+                                          <Select
+                                            defaultValue={'India'}
+                                            value={countryCode}
+                                            onChange={(value) => setCountryCode(value)}
+                                            placeholder={t("selectCountry")}
+                                          >
+                                            {countryList.map((x) => (
+                                              <Option key={x.countryCode} value={x.countryNameEn}>
+                                                {x.countryNameEn}
+                                              </Option>
+                                            ))}
+                                          </Select>
+                                        </Form.Item>
+                                      </Col>
+                                    </Row>
+
+                                    {/* Button */}
+                                    <Button
+                                      onClick={onScrape}
+                                      type="primary"
+                                      htmlType="submit"
+                                      block
+                                      style={{ marginBottom: 10, color: "#fff", backgroundColor: "#2d49d8" }}
+                                    >
+                                      <StarOutlined /> {t("start")}
+                                    </Button>
+                                  </Form>
+                                </Card>
+
+                                <Row item xs={12}>
+                                  <Space
+                                    style={{
+                                      marginTop: "10px",
+                                      display: "flex",
+                                      flexDirection: "column",
+                                    }}
+                                  >
+                                    {product != null &&
+                                      rData?.show_ads == true ? (
+                                      <div style={{ marginTop: 20 }}>
+                                        <Carousel
+                                          autoplay
+                                          beforeChange={(from, to) =>
+                                            setActiveStep(to)
+                                          }
+                                          arrows
+                                          infinite={false}
+                                          style={{ marginTop: 10, width: 320 }}
+                                        >
+                                          {product?.showAd && (
+                                            <div>
+                                              <a
+                                                href={
+                                                  product?.adBannerUrl || ""
+                                                }
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                              >
+                                                <Image
+                                                  src={getBannerUrl(
+                                                    product?.adBannerUrl
+                                                  )}
+                                                  alt={
+                                                    product?.adBannerUrl || ""
+                                                  }
+                                                  preview={false}
+                                                  loading="lazy"
+                                                  style={{
+                                                    margin: 0,
+                                                    height: "181px",
+                                                    width: "100%",
+                                                    borderRadius: 6,
+                                                    objectFit: "cover",
+                                                  }}
+                                                />
+                                              </a>
+                                            </div>
+                                          )}
+                                          {product?.demoVideoUrl &&
+                                            product?.demoVideoUrl.includes(
+                                              "youtube.com"
+                                            ) && (
+                                              <div
+                                                style={{ position: "relative" }}
+                                              >
+                                                <a
+                                                  href={
+                                                    product?.demoVideoUrl || ""
+                                                  }
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                >
+                                                  <PlayCircleOutlined
+                                                    style={{
+                                                      position: "absolute",
+                                                      top: "50%",
+                                                      left: "50%",
+                                                      transform:
+                                                        "translate(-50%, -50%)",
+                                                      fontSize: 60,
+                                                      color: "grey",
+                                                      opacity: 0.8,
+                                                    }}
+                                                  />
+                                                  <Image
+                                                    src={get_youtube_thumbnail(
+                                                      product?.demoVideoUrl ||
+                                                      "",
+                                                      "high"
+                                                    )}
+                                                    preview={false}
+                                                    loading="lazy"
+                                                    alt={
+                                                      product?.demoVideoUrl ||
+                                                      ""
+                                                    }
+                                                    style={{
+                                                      height: "181px",
+                                                      width: "100%",
+                                                      objectFit: "cover",
+                                                    }}
+                                                  />
+                                                </a>
+                                              </div>
+                                            )}
+                                        </Carousel>
+                                      </div>
+                                    ) : (
+                                      <></>
+                                    )}
+                                  </Space>
+                                </Row>
                               </Row>
                             </>
+                          ) : (
+                            <></>
                           )}
-                          <Button
-                            danger
-                            type="dashed"
-                            onClick={onClearScrapData}
-                            style={{ marginTop: 16, display: "block", marginLeft: "auto", marginRight: "auto" }}
-                          >
-                            {t("clearAll")}
-                          </Button>
 
-                        </>
-                      )}
-                    </div>
-                  )}
+                          {selectedTabId == 1 ? (
+                            <>
+                              <Flex
+                                vertical
+                                align="center"
+                                justify="center"
+                                style={{
+                                  width: "100%",
+                                  color: "black",
+                                  marginTop: -22,
+                                }}
+                              >
+                                <Row
+                                  justify="center"
+                                  style={{
+                                    width: 323,
+                                    margin: "24px 0",
+                                    color: "black",
+                                  }}
+                                >
+                                  <Col span={24}>
+                                    {Object.keys(scrapData ?? {}).length ==
+                                      0 ? (
+                                      <Alert
+                                        message={t("noDataFound")}
+                                        type="warning"
+                                        showIcon
+                                      />
+                                    ) : (
+                                      <Card
+                                        size="small"
+                                        bodyStyle={{
+                                          padding: "6px 10px",
+                                        }}
+                                      >
+                                        <Form.Item
+                                          label="Select Data"
+                                          layout="vertical"
+                                        >
+                                          <Select
+                                            value={selectedKeywordId}
+                                            placeholder="Select Keyword"
+                                            onChange={(value) =>
+                                              setSelectedKeywordId(value)
+                                            }
+                                            style={{ width: "100%" }} // Ensures full width
+                                            dropdownStyle={{
+                                              maxHeight: 200, // Controls dropdown height
+                                              overflow: "auto",
+                                            }}
+                                          >
+                                            <Select.Option value="select">
+                                              Select
+                                            </Select.Option>
+                                            {Object.keys(scrapData).map(
+                                              (key) => (
+                                                <Select.Option
+                                                  key={key}
+                                                  value={key}
+                                                >
+                                                  {scrapData[key].name}
+                                                </Select.Option>
+                                              )
+                                            )}
+                                          </Select>
+                                        </Form.Item>
 
-                  {selectedTabId === "setting" && (
-                    <Form onFinish={onSaveSetting} style={{ padding: "24px" }}>
-                      <Row gutter={16}>
-                        <Col span={12}>
-                          <Form.Item label={t("delay")}>
-                            <Input
-                              type="number"
-                              value={delay}
-                              onChange={(e) => setDelay(e.target.value)}
-                              min={1}
-                            />
-                          </Form.Item>
-                        </Col>
-                        <Col span={12}>
-                          <Form.Item label={t("language")}>
-                            <Select
-                              value={selectLang}
-                              onChange={setSelectLang}
-                              showSearch // Enables searching
-                              filterOption={(input, option) =>
-                                option.children.toLowerCase().includes(input.toLowerCase()) // Filters based on user input
-                              }
-                              style={{ width: "100%" }}
-                              placeholder={t("selectLanguage")}
+                                        {selectedKeywordId != "select" ? (
+                                          <>
+                                            <Row
+                                              style={{
+                                                marginTop: 16,
+                                                color: "black",
+                                                margin: "0px",
+                                              }}
+                                            >
+                                              <Col>
+                                                <Typography.Text color="black">
+                                                {t("totalData")} :
+                                                  {
+                                                    (
+                                                      scrapData[
+                                                        selectedKeywordId
+                                                      ]?.data ?? []
+                                                    ).length
+                                                  }
+                                                </Typography.Text>
+                                              </Col>
+                                              <Divider
+                                                style={{ margin: "2px 0" }}
+                                              />
+                                              <Col style={{ marginBottom: 10 }}>
+                                                <Typography.Text color="black">
+                                                   {t("lastDate")}:
+                                                  {dateFormat(
+                                                    scrapData[selectedKeywordId]
+                                                      ?.createdAt,
+                                                    true
+                                                  )}
+                                                </Typography.Text>
+                                              </Col>
+                                            </Row>
+                                            <Row gutter={[16, 16]}>
+                                              <Col span={12}>
+                                                <Button
+                                                style={{ color: "#fff", backgroundColor: "#2d49d8" }}
+                                                  type="primary"
+                                                  onClick={(e) =>
+                                                    onDownloadScrapData()
+                                                  }
+                                                  block
+                                                >
+                                                  <DownloadOutlined /> {t("download")}
+                                                </Button>
+                                              </Col>
+
+                                              <Col span={12}>
+                                                <Button
+                                                  type="primary"
+                                                  danger
+                                                  onClick={onDeleteScrapData}
+                                                  block
+                                                >
+                                                  <DeleteOutlined /> {t("delete")}
+                                                </Button>
+                                              </Col>
+                                            </Row>
+                                          </>
+                                        ) : (
+                                          <></>
+                                        )}
+                                        <Row justify="center">
+                                          <Col
+                                            span={24}
+                                            style={{
+                                              marginTop: 14,
+                                              marginBottom: 10,
+                                            }}
+                                          >
+                                            <Button
+                                              type="default"
+                                              danger
+                                              onClick={onClearScrapData}
+                                              block
+                                            >
+                                              <ClearOutlined /> {t("clearAll")}
+                                            </Button>
+                                          </Col>
+                                        </Row>
+                                      </Card>
+                                    )}
+                                  </Col>
+                                </Row>
+                              </Flex>
+                            </>
+                          ) : (
+                            <></>
+                          )}
+
+                          {selectedTabId == 2 ? (
+                            <Card
+                              style={{
+                                maxWidth: 320,
+                                margin: "0 auto",
+                                borderRadius: 10,
+                              }}
+                              bodyStyle={{
+                                padding: "3px 8px",
+                              }}
                             >
-                              {langList.map((x) => (
-                                <Select.Option key={x.key} value={x.key}>
-                                  {x.name}
-                                </Select.Option>
-                              ))}
-                            </Select>
-                          </Form.Item>
-                        </Col>
+                              <Space
+                                direction="vertical"
+                                size="middle"
+                                style={{ width: "100%" }}
+                              >
+                                <div>
+                                  <Title level={5} style={{ margin: 0 }}>
+                                  {t("helpMsg")}
+                                  </Title>
+                                  <Text
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                   {t("contactWithEmail")}
+                                  </Text>
+                                </div>
 
-                      </Row>
-                      <Title level={5}>{t("extractingCol")}</Title>
-                      <Row>
-                        {columns.map((col) => (
-                          <Col span={12} key={col.value}>
-                            <Checkbox
-                              checked={extractCol[col.value]}
-                              onChange={(e) =>
-                                setExtractCol((ec) => ({
-                                  ...ec,
-                                  [col.value]: e.target.checked,
-                                }))
-                              }
+                                <Card
+                                  size="small"
+                                  style={{
+                                    background: "#fafafa",
+                                    borderRadius: 8,
+                                    margin: "-10px 0",
+                                  }}
+                                  bodyStyle={{
+                                    padding: 4,
+                                  }}
+                                >
+                                  <Space>
+                                  <PhoneOutlined style={{ fontSize: 20 }} />
+                                  <div>
+                                    <Text strong>Phone</Text>
+                                    <br />
+                                    <Text>{licenseDetails?.phone || "-"}</Text>
+                                  </div>
+                                </Space>
+                                </Card>
+
+                                <Card
+                                size="small"
+                                style={{
+                                  background: "#fafafa",
+                                  borderRadius: 8,
+                                }}
+                                bodyStyle={{
+                                  padding: 4,
+                                }}
+                              >
+                                <Space>
+                                  <MailOutlined style={{ fontSize: 20 }} />
+                                  <div>
+                                    <Text strong>Email</Text>
+                                    <br />
+                                    <Text>{licenseDetails?.email || "-"}</Text>
+                                  </div>
+                                </Space>
+                              </Card>
+
+                                  <Card
+                                size="small"
+                                style={{
+                                  background: "#fafafa",
+                                  borderRadius: 8,
+                                  margin: "-10px 0",
+                                }}
+                                bodyStyle={{
+                                  padding: 4,
+                                }}
+                              >
+                                <Space>
+                                  <GlobalOutlined style={{ fontSize: 20 }} />
+                                  <div>
+                                    <Text strong>Website</Text>
+                                    <br />
+                                    <Text style={{ fontSize: 12 }}>
+                                      {licenseDetails?.website ||
+                                        "https://digibulkmarketing.com/"}
+                                    </Text>
+                                  </div>
+                                </Space>
+                              </Card>
+
+
+                                <div
+                                // style={{ margin: "-10px 3px" }}
+                                >
+                                  <Title level={5} style={{ margin: 0 }}>
+                                  {t("disclaimer")}
+                                  </Title>
+                                  <Paragraph
+                                    type="secondary"
+                                    style={{ fontSize: 12 }}
+                                  >
+                                   {t("certified")}
+                                  </Paragraph>
+                                </div>
+                              </Space>
+                            </Card>
+                          ) : (
+                            <></>
+                          )}
+                        </Typography>
+                      </Typography>
+                    ) : (
+                      <>
+                        <Row gutter={[0, 0]} align="middle" justify="center">
+                          <Col span={24}>
+                            <Form
+                              onFinish={onActivateSubmit}
+                              layout="vertical"
+                              style={{ padding: "0px 10px" }}
                             >
-                              {t(col.label)}
-                            </Checkbox>
+                              {licenseMessage && (
+                                <Alert
+                                  message={licenseMessage}
+                                  type="warning"
+                                  showIcon
+                                  style={{ marginBottom: "16px" }}
+                                />
+                              )}
+
+                              <Form.Item
+                                label="Name"
+                                name="name"
+                                required
+                                style={{ margin: "0px 0px" }}
+                              >
+                                <Input
+                                  prefix={<UserOutlined />}
+                                  placeholder="Enter Name"
+                                  value={name}
+                                  onChange={(e) => setName(e.target.value)}
+                                  status={errors.name ? "error" : ""}
+                                />
+                              </Form.Item>
+
+                              <Form.Item
+                                label={t("email")}
+                                name="email"
+                                required
+                                style={{ margin: "6px 0" }}
+                              >
+                                <Input
+                                  prefix={<MailOutlined />}
+                                  placeholder="Enter Email Address"
+                                  value={email}
+                                  onChange={(e) => setEmail(e.target.value)}
+                                  status={errors.email ? "error" : ""}
+                                />
+                              </Form.Item>
+
+                              <Form.Item
+                                label={t("phone")}
+                                name="phone"
+                                required
+                                style={{ margin: "6px 0" }}
+                              >
+                                <PhoneInput
+                                  country="in"
+                                  placeholder="Enter Phone Number"
+                                  value={phone}
+                                  onChange={(value) => setPhone(value)}
+                                  inputProps={{
+                                    style: {
+                                      borderColor: errors.phone
+                                        ? "red"
+                                        : undefined,
+                                      width: "100%",
+                                    },
+                                  }}
+                                />
+                              </Form.Item>
+
+                              <Form.Item
+                                label="City"
+                                name="city"
+                                required
+                                style={{ margin: "6px 0" }}
+                              >
+                                <Input
+                                  prefix={<HomeOutlined />}
+                                  placeholder="Enter City Name"
+                                  value={city}
+                                  onChange={(e) => setCity(e.target.value)}
+                                  status={errors.city ? "error" : ""}
+                                />
+                              </Form.Item>
+
+                              <Form.Item
+                                name="country"
+                                label="Country"
+                                required
+                                style={{ margin: "6px 0" }}
+                                initialValue={"IN"}
+                              >
+                                <Select
+                                  defaultActiveFirstOption
+                                  showSearch
+                                  placeholder="Select Country"
+                                  onSearch={onSearch}
+                                  optionLabelProp="label"
+                                  value={country}
+                                  onChange={(value) => setCountry(value)}
+                                  status={errors.country ? "error" : ""}
+                                >
+                                  {countryList.map((x) => (
+                                    <Option
+                                      key={x.countryCode}
+                                      value={x.countryNameEn}
+                                      label={x.countryNameEn}
+                                    >
+                                      <span>
+                                        <EnvironmentOutlined
+                                          style={{ marginRight: 8 }}
+                                        />
+                                        {x.countryNameEn}
+                                      </span>
+                                    </Option>
+                                  ))}
+                                </Select>
+                              </Form.Item>
+
+                              <Form.Item
+                                label="License Key"
+                                name="key"
+                                required
+                                style={{ margin: "6px 0" }}
+                              >
+                                <Input
+                                  prefix={<KeyOutlined />}
+                                  suffix={
+                                    keyIsValid ? (
+                                      <CheckCircleOutlined
+                                        style={{ color: "green" }}
+                                      />
+                                    ) : (
+                                      <CheckCircleOutlined
+                                        style={{ color: "gray" }}
+                                      />
+                                    )
+                                  }
+                                  placeholder="Enter License Key"
+                                  autoComplete="off"
+                                  value={key}
+                                  onChange={(e) => setKey(e.target.value)}
+                                  status={
+                                    errors.key
+                                      ? "error"
+                                      : keyIsValid
+                                        ? "success"
+                                        : ""
+                                  }
+                                />
+                              </Form.Item>
+
+                              {/* <Row
+                                justify="center"
+                                gutter={16}
+                                style={{ marginBottom: 10 }}
+                              >
+                                <Col span={12}>
+                                  <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    block
+                                  >
+                                    Activate
+                                  </Button>
+                                </Col>
+                                {product && rData?.active_shop && (
+                                  <Col span={12}>
+                                    <Button
+                                      style={{
+                                        border: "2px solid green",
+                                        color: "green",
+                                        textAlign: "center",
+                                      }}
+                                      type="link"
+                                      href={product?.siteUrl || rData?.buy_url}
+                                      block
+                                    >
+                                      Buy Now
+                                    </Button>
+                                  </Col>
+                                )}
+                              </Row> */}
+                              <Row justify="center" gutter={16} style={{ marginBottom: 10 }}>
+                                <Col span={12}>
+                                  <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    block
+                                    style={{ color: "#fff", backgroundColor: "#2d49d8" }}
+                                  >
+                                    <CheckCircleOutlined />   Activate
+                                  </Button>
+                                </Col>
+
+                                {(product?.siteUrl || rData?.buy_url) && rData?.active_shop && (
+                                  <Col span={12}>
+                                    <Button
+                                      type="link"
+                                      block
+                                      style={{
+                                        border: '2px solid green',
+                                        color: 'green',
+                                        textAlign: 'center',
+                                      }}
+                                    >
+                                      <a
+                                        href={product?.siteUrl || rData?.buy_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                          display: 'block',
+                                          width: '100%',
+                                          height: '100%',
+                                          textAlign: 'center',
+                                          lineHeight: '32px', // Adjust height based on button height
+                                          color: 'green',
+                                          textDecoration: 'none',
+                                        }}
+                                      >
+                                        <ShoppingOutlined />Buy Now
+                                      </a>
+                                    </Button>
+                                  </Col>
+                                )}
+                              </Row>
+
+                            </Form>
                           </Col>
-                        ))}
-                      </Row>
-                      <Button onClick={onSaveSetting}
-
-                        type="primary"
-                        style={{ marginTop: 16, display: "block", marginLeft: "auto", marginRight: "auto" }}
-                      >
-                        {t("save")}
-                      </Button>
-                    </Form>
-                  )}
-
-                  {selectedTabId === "help" && (
-                    <div style={{ padding: "24px", marginTop: "-29px" }}>
-                      <Title level={5}>{t("helpMsg")}</Title>
-                      <Paragraph style={{ fontSize: "0.8rem" }}>{t("contactWithEmail")}</Paragraph>
-                      <List style={{ marginTop: "-15px" }}
-                        dataSource={[
-                          { icon: <PhoneOutlined />, title: t("phone"), value: rData?.active_shop ? product?.contactNumber : rData?.phone, href: "tel:" },
-                          { icon: <MailOutlined />, title: t("email"), value: rData?.active_shop ? product?.email : rData?.email, href: "mailto:" },
-                          { icon: <GlobalOutlined />, title: t("website"), value: rData?.active_shop ? product?.siteUrl : rData?.siteUrl, href: "" },
-                        ].filter(item => item.value)}
-                        renderItem={(item) => (
-                          <List.Item>
-                            <List.Item.Meta
-                              avatar={<Avatar icon={item.icon} />}
-                              title={item.title}
-                              description={<a href={`${item.href}${item.value}`} target="_blank" rel="noopener noreferrer">{item.value}</a>}
-                            />
-                          </List.Item>
-                        )}
-                      />
-                      <Title level={5} style={{ marginTop: "-10px" }}>{t("disclaimer")}:</Title>
-                      <Paragraph style={{ fontSize: "0.8rem" }}>{t("certified")}</Paragraph>
-                    </div>
-                  )}
-                </div>
-                <div style={{ position: "absolute", bottom: 0, width: "100%", textAlign: "center" }}>
-                  <Row justify="center" align="middle">
-                    <Typography.Text type="secondary">
-                      {`V ${localmanifestVersion?.localVersion ?? ""}`}
-                    </Typography.Text>
-                  </Row>
-                </div>
-
-              </>
-            ) : (
-              <Form
-                form={form}
-                style={{ padding: 12, maxWidth: 400, margin: "0 auto" }}
-                layout="vertical"
-                onFinish={onActivateSubmit} // Handles form submission
-              >
-                {/* Name */}
-                <Form.Item name="name" rules={[{ required: true, message: t("nameRequired") }]}>
-                  <Input value={name}  onChange={(e) => setName(e.target.value)} prefix={<VscAccount style={{ fontSize: "1.2rem" }} />} placeholder={t("enterName")} />
-                </Form.Item>
-
-                {/* Email */}
-                <Form.Item
-                  name="email"
-                  rules={[
-                    { required: true, message: t("emailRequired") },
-                    { type: "email", message: t("emailInvalid") }
-                  ]}
-                >
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} prefix={<MailOutlined />} placeholder={t("enterEmail")} />
-                </Form.Item>
-
-                {/* Phone */}
-                <Form.Item name="phone" rules={[{ required: true, message: t("phoneRequired") }]}>
-                  <PhoneInput value={phone} onChange={(phone) => setPhone(phone)} country={"in"} inputStyle={{ width: "100%" }} />
-                </Form.Item>
-
-                {/* City */}
-                <Form.Item name="city" rules={[{ required: true, message: t("cityRequired") }]}>
-                  <Input value={city} onChange={(e) => setCity(e.target.value)} prefix={<IoHomeOutline style={{ fontSize: "1.2rem" }} />} placeholder={t("enterCity")} />
-                </Form.Item>
-
-                {/* Country */}
-                <Form.Item name="country" rules={[{ required: true, message: t("selectCountry") }]}>
-                  {/* <IoLocationOutline style={{ fontSize: "1.2rem" }} /> */}
-
-                  <Select value={country}  onChange={(value) => setCountry(value)} prefix={<IoLocationOutline style={{ fontSize: "1.2rem" }} />} placeholder={t("selectCountry")} showSearch>
-                    {countryList.map((x) => (
-                      <Option key={x.countryCode}
-                      value={x.countryNameEn}
-                      label={x.countryNameEn}>
-                        {x.countryNameEn}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-
-
-                {/* License Key */}
-                <Form.Item
-                  name="key"
-                  rules={[
-                    { required: true, message: t("enterLicenseKey") },
-                  ]}
-                >
-                  <Input value={key} onChange={(e) => setKey(e.target.value)} prefix={<MdKey style={{ fontSize: "1.2rem" }} />} suffix={keyIsValid ? <CheckCircleOutlined /> : <CloseCircleOutlined />} placeholder={t("enterLicenseKey")} />
-                </Form.Item>
-
-                {/* Get Trial */}
-                <Form.Item style={{ textAlign: "right", marginTop: "-10px" }}>
-                  <Text style={{ cursor: "pointer" }} onClick={getTrial}>
-                    {t("getTrial")}
-                  </Text>
-                </Form.Item>
-
-                {/* Buttons */}
-                <Flex justify="center">
-                  <Space>
-                    <Button type="primary" htmlType="submit">
-                      {t("activate")}
-                    </Button>
-                    {(product?.siteUrl || rData?.buy_url) && (
-                      <Button>
-                        <a href={product?.siteUrl || rData?.buy_url} target="_blank" rel="noopener noreferrer">
-                          {t("buyNow")}
-                        </a>
-                      </Button>
+                        </Row>
+                      </>
                     )}
-                  </Space>
-                </Flex>
-              </Form>
+                  </Typography>
+                )}
+              </>
             )}
-          </div>
+          </>
         )}
-      </ConfigProvider >
+        {showSecond && (
+          <Card
+            bordered
+            style={{
+              width: "100%",
+              textAlign: "center",
+              position: "absolute",
+              bottom: 0,
+            }}
+            bodyStyle={{ padding: "12px" }}
+          >
+            <Text>V1.1 | DBM Social Extractor</Text>
+          </Card>
+        )}
+      {/* </ConfigProvider> */}
     </>
-
   );
 };
 

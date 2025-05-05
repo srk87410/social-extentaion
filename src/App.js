@@ -1,23 +1,23 @@
-// import logo from './logo.svg';
+
+import { ConfigProvider } from "antd";
 import './App.css';
-// import Form from './component/Form';
-// import Form from './Component/Form'
-
-// import { SnackbarProvider } from 'notistack';
-
-
+import { useThemeContext } from "./ThemeContext";
+import FormComponent from './Component/Form';
+import { useMemo } from "react";
+import { getThemeConfiguration } from "./util/common.util";
 import i18next from "i18next";
 import { useTranslation } from "react-i18next";
-import FormComponent from './Component/Form';
-// import FormComponent from './Component/Form';
 
 function App() {
+  const { theme } = useThemeContext();
+  const themeConfig = useMemo(() => getThemeConfiguration(theme), [theme]);
+
   return (
-    // <SnackbarProvider maxSnack={3}>
-    <div className="App">
-    <FormComponent />
-    </div>
-    // </SnackbarProvider>
+    <ConfigProvider theme={themeConfig}>
+      <div className="App">
+        <FormComponent />
+      </div>
+    </ConfigProvider>
   );
 }
 

@@ -1,1 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;300;400&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@100;300&display=swap");
+[data-theme="light"] {
+  --bg-color: white;
+  --text-color: black;
+}
+
+[data-theme="dark"] {
+  --bg-color: black;
+  --text-color: white;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+.ant-btn-primary {
+  box-shadow: none !important;
+}
+.ant-card-head-tabs .ant-tabs-nav::before {
+  border-bottom: none !important; /* Removes the middle separator line */
+}
+.ant-btn-color-dangerous.ant-btn-variant-outlined.ant-btn-color-dangerous.ant-btn-variant-dashed {
+  box-shadow: none;
+}
+
+
+.ant-btn-color-primary{
+    box-shadow: none;
+}

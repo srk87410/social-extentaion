@@ -4,8 +4,7 @@ import { initReactI18next } from "react-i18next";
 import langData from "./langData.json";
 
 // the translations
-const resources = {
-};
+const resources = {};
 
 
 langData.forEach((o) => {
